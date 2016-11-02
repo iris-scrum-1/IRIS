@@ -36,10 +36,13 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +56,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.custommonkey.xmlunit.Diff;
 import org.custommonkey.xmlunit.XMLAssert;
+import org.joda.time.LocalDateTime;
 import org.junit.Test;
 import org.odata4j.core.OEntities;
 import org.odata4j.core.OEntity;
@@ -450,6 +454,9 @@ public class TestHALProvider {
 		Vocabulary vocBody = new Vocabulary();
 		vocBody.setTerm(new TermValueType(TermValueType.INTEGER_NUMBER));
 		vocs.setPropertyVocabulary("age", vocBody);
+		Vocabulary vocBirth = new Vocabulary();
+		vocBirth.setTerm(new TermValueType(TermValueType.DATE));
+        vocs.setPropertyVocabulary("dateOfBirth", vocBirth);
 		Metadata metadata = new Metadata("Family");
 		metadata.setEntityMetadata(vocs);
 		return metadata;
@@ -956,7 +963,7 @@ public class TestHALProvider {
 	}
 
 	@Test
-	public void testBuildMapFromOEntity() {
+	public void testBuildMapFromOEntity() throws ParseException {
 		HALProvider hp = new HALProvider(createMockChildVocabMetadata());
 		
 		/* 
@@ -967,19 +974,27 @@ public class TestHALProvider {
 		OEntityKey entityKey = OEntityKey.create("123");
 		List<OProperty<?>> properties = new ArrayList<OProperty<?>>();
 		properties.add(OProperties.string("name", "noah"));
-		properties.add(OProperties.string("age", "2"));
-		properties.add(OProperties.string("shoeSize", "5"));
+		properties.add(OProperties.int32("age", 2));
+		properties.add(OProperties.int32("shoeSize", 5));
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+		String dateInString = "31-08-2016 10:20:56";
+		Date date = sdf.parse(dateInString);
+		
+		properties.add(OProperties.datetime("dateOfBirth", date));
 		OEntity entity = OEntities.create(createMockChildrenEntitySet(), entityKey, properties, new ArrayList<OLink>());
 		
 		// map of property name to value object
 		Map<String, Object> map = new HashMap<String, Object>();
 		hp.buildFromOEntity(map, entity, "Children");
 		
-		assertEquals(2, map.keySet().size());
+		assertEquals(3, map.keySet().size());
 		assertTrue(map.keySet().contains("name"));
 		assertTrue(map.keySet().contains("age"));
+		assertTrue(map.keySet().contains("dateOfBirth"));
 		assertEquals("noah", map.get("name"));
-		assertEquals("2", map.get("age"));
+		assertEquals(2, map.get("age"));		
+		assertTrue(map.get("dateOfBirth").equals(new LocalDateTime(date.getTime())));
 	}
 	
 	@Test
@@ -1033,6 +1048,7 @@ public class TestHALProvider {
 		eprops.add(EdmProperty.newBuilder("ID").setType(EdmSimpleType.STRING));
 		eprops.add(EdmProperty.newBuilder("name").setType(EdmSimpleType.STRING));
 		eprops.add(EdmProperty.newBuilder("age").setType(EdmSimpleType.STRING));
+		eprops.add(EdmProperty.newBuilder("dateOfBirth").setType(EdmSimpleType.DATETIME));
 		EdmEntityType.Builder eet = EdmEntityType.newBuilder().setNamespace("InteractionTest").setName("Children").addKeys(Arrays.asList("ID")).addProperties(eprops);
 		EdmEntitySet.Builder ees = EdmEntitySet.newBuilder().setName("Children").setEntityType(eet);
 		return ees.build();

@@ -373,7 +373,8 @@ public class HALProvider implements MessageBodyReader<RESTResource>, MessageBody
 				return map;
 			}
 		} else
-			return any.toString();
+			//return any.toString();
+		    return any;
 	}
 
 	/** populate a Map with the properties of an OEntity
