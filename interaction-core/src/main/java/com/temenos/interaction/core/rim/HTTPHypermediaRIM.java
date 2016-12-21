@@ -781,6 +781,9 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
                     break;
                 }
             }
+            if (autoResponse.getResource() != null) {
+                ctx.setResource(autoResponse.getResource());
+            }
             autoTransitions = getTransitions(ctx, autoResponse.getResolvedState(), Transition.AUTO);
         }while(!autoTransitions.isEmpty() && autoTransition.isType(Transition.AUTO));
         if (autoResponse.getResponse().getStatus() != Status.OK.getStatusCode()) {
@@ -880,7 +883,7 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
             ctx.getQueryParameters().putAll(newCtx.getQueryParameters());
             ctx.getOutQueryParameters().putAll(newCtx.getOutQueryParameters());
             
-            return new ResponseWrapper(response, new ArrayList<Link>(
+            return new ResponseWrapper(response, newCtx.getResource(), new ArrayList<Link>(
                     new LinkGeneratorImpl(hypermediaEngine, targetState.getSelfTransition(), newCtx
                     ).createLink(newPathParameters, newQueryParameters, response.getEntity())
                 ).get(0), 

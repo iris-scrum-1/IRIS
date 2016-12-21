@@ -64,6 +64,7 @@ public class RequestContextFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
 
+        long requestTime = System.currentTimeMillis();
         final HttpServletRequest servletRequest = (HttpServletRequest) request;
 
         String requestURI = servletRequest.getRequestURI();
@@ -80,15 +81,17 @@ public class RequestContextFilter implements Filter {
             }
         }
 
-        RequestContext ctx;
+        RequestContext.Builder reqCtxBuilder = new RequestContext.Builder()
+                                                .setBasePath(baseURL)
+                                                .setRequestUri(servletRequest.getRequestURI())
+                                                .setVerbosityHeader(servletRequest.getHeader(RequestContext.HATEOAS_OPTIONS_HEADER))
+                                                .setHeaders(headersMap)
+                                                .setRequestTime(requestTime);
         Principal userPrincipal = servletRequest.getUserPrincipal();
         if (userPrincipal != null) {
-        	ctx = new RequestContext(baseURL, servletRequest.getRequestURI(), servletRequest.getHeader(RequestContext.HATEOAS_OPTIONS_HEADER), userPrincipal, headersMap);
-        } else {
-        	ctx = new RequestContext(baseURL, servletRequest.getRequestURI(), servletRequest.getHeader(RequestContext.HATEOAS_OPTIONS_HEADER), headersMap);
+            reqCtxBuilder.setUserPrincipal(userPrincipal);
         }
-
-        RequestContext.setRequestContext(ctx);
+        RequestContext.setRequestContext(reqCtxBuilder.build());
         
         try {
             chain.doFilter(request, response);

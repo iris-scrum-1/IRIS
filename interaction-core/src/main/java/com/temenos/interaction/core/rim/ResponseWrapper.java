@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 
 import com.temenos.interaction.core.hypermedia.Link;
 import com.temenos.interaction.core.hypermedia.ResourceState;
+import com.temenos.interaction.core.resource.RESTResource;
 
 /**
  * Wraps an internal IRIS Response object with a link to the resolved location
@@ -36,6 +37,7 @@ import com.temenos.interaction.core.hypermedia.ResourceState;
  */
 public final class ResponseWrapper {
     private final Response response;
+    private final RESTResource resource;
     private final Link selfLink;
     private final MultivaluedMap<String, String> requestParameters;
     private final ResourceState resolvedState;
@@ -43,6 +45,16 @@ public final class ResponseWrapper {
     public ResponseWrapper(Response response, Link selfLink, 
             MultivaluedMap<String, String> requestParameters, ResourceState resolvedState) {
         this.response = response;
+        this.resource = null;
+        this.selfLink = selfLink;
+        this.requestParameters = requestParameters;
+        this.resolvedState = resolvedState;
+    }
+    
+    public ResponseWrapper(Response response, RESTResource resource, Link selfLink, 
+            MultivaluedMap<String, String> requestParameters, ResourceState resolvedState) {
+        this.response = response;
+        this.resource = resource;
         this.selfLink = selfLink;
         this.requestParameters = requestParameters;
         this.resolvedState = resolvedState;
@@ -79,5 +91,12 @@ public final class ResponseWrapper {
      */
     public ResourceState getResolvedState(){
         return resolvedState;
+    }
+
+    /**
+     * @return the resource
+     */
+    public RESTResource getResource() {
+        return resource;
     }
 }

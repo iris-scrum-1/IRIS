@@ -474,31 +474,33 @@ public class HALProvider implements MessageBodyReader<RESTResource>, MessageBody
 		}
 	}
 
-  // Populate a Representation with the links and properties
-  void collectLinksAndProperties(Representation resource, Iterable<Link> links,
-                                 Map<String, Object> propertyMap) {
-        if (links != null) {
-          for (Link l : links) {
-            logger.debug("Link: id=[" + l.getId() + "] rel=[" + l.getRel() +
-                   "] method=[" + l.getMethod() + "] href=[" + l.getHref() + "]");
-            String[] rels = new String[0];
-            if (l.getRel() != null) {
-              rels = l.getRel().split(" ");
-            }
-            
-            if (rels != null) {
-              for (int i = 0 ; i < rels.length; i++) {
-                resource.withLink(rels[i], l.getHref(), l.getId(), l.getTitle(), null, null); 
-              }
-            }
-          }
-        }
+	// Populate a Representation with the links and properties
+	void collectLinksAndProperties(Representation resource, Iterable<Link> links,
+	        Map<String, Object> propertyMap) {
+	    if (links != null) {
+	        for (Link l : links) {
+	            if(l != null) {
+	                logger.debug("Link: id=[" + l.getId() + "] rel=[" + l.getRel() +
+	                        "] method=[" + l.getMethod() + "] href=[" + l.getHref() + "]");
+	                String[] rels = new String[0];
+	                if (l.getRel() != null) {
+	                    rels = l.getRel().split(" ");
+	                }
 
-        // add properties to HAL sub resource
-        for (String key : propertyMap.keySet()) {
-          resource.withProperty(key, propertyMap.get(key));
-        }
-  }
+	                if (rels != null) {
+	                    for (int i = 0 ; i < rels.length; i++) {
+	                        resource.withLink(rels[i], l.getHref(), l.getId(), l.getTitle(), null, null); 
+	                    }
+	                }
+	            }
+	        }
+	    }
+
+	    // add properties to HAL sub resource
+	    for (String key : propertyMap.keySet()) {
+	        resource.withProperty(key, propertyMap.get(key));
+	    }
+	}
   
 	private Representation buildRepresentation(Representation halResource,
 											   RESTResource resource,
