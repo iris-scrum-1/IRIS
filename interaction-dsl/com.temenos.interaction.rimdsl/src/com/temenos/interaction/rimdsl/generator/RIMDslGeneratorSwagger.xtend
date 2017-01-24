@@ -22,6 +22,9 @@ import com.temenos.interaction.rimdsl.rim.Ref
 import org.apache.commons.lang.StringUtils
 import org.eclipse.emf.common.util.EList
 import com.temenos.interaction.rimdsl.rim.MdfAnnotation
+import com.temenos.interaction.rimdsl.rim.CommandProperty
+import java.util.Hashtable
+import com.temenos.interaction.rimdsl.rim.MethodRef
 
 class RIMDslGeneratorSwagger implements IGenerator {
     
@@ -145,69 +148,7 @@ class RIMDslGeneratorSwagger implements IGenerator {
             "produces": ["application/json","application/xml"],
             «ENDIF»
             "parameters": [
-                «setNextComma(false)» 
-                «FOR methodCommand : methods»
-                    «FOR propertie : methodCommand.command.properties SEPARATOR ','»
-                        «IF propertie.name.equals("filter") && propertie.name.contains("{")»
-                            «var pattern = Pattern.compile("(?:.*\\{)(.*)(?:\\}.*)")»
-                            «var matcher = pattern.matcher(path)»
-                            «IF matcher.find()»
-                                «var value = matcher.group(1)»
-                                {
-                                    "name": "«value»",
-                                    "in": "query",
-                                    "required": false,
-                                    "type": "string",
-                                    "default" : ""
-                                }
-                                «setNextComma(true)»
-                            «ENDIF»
-                        «ELSE»
-                            {
-                                "name": "«propertie.name»",
-                                "in": "query",
-                                "required": false,
-                                "type": "string",
-                                "default" : ""
-                            }
-                            «setNextComma(true)» 
-                        «ENDIF»
-                    «ENDFOR»
-                «ENDFOR»
-                «IF path.contains("{") »
-                    «var pattern = Pattern.compile("(?:.*\\{)(.*)(?:\\}.*)")»
-                    «var matcher = pattern.matcher(path)»
-                    «IF matcher.find()»
-                        «var value = matcher.group(1)»
-                        «IF nextComma»,«ENDIF»
-                        {
-                            "name": "«value»",
-                            "in": "path",
-                            "description": "",
-                            "required": true,
-                            "type": "string"
-                        }
-                        «setNextComma(true)» 
-                    «ENDIF»
-                «ENDIF»
-                «IF rim.basepath.name.contains("{") »
-                    «IF nextComma»,«ENDIF»
-                    «getBasePathParams(rim.basepath)»
-                    «setNextComma(true)» 
-                «ENDIF»
-                «IF method == "POST" || method == "PUT"»
-                    «IF nextComma»,«ENDIF»
-                    {
-                        "in": "body",
-                        "name": "body",
-                        "description": "-",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/«state.entity.name»"
-                        }
-                    }
-                    «setNextComma(true)» 
-                «ENDIF»
+                «getParams(methods, path, rim.basepath, method, state)»
             ],
             «IF findAnnotation(state.annotations,"tags")» "tags": [«getTags(state.annotations)»],
             «ELSEIF findAnnotation(rim.annotations,"tags")» "tags": [«getTags(rim.annotations)»],
@@ -418,34 +359,121 @@ class RIMDslGeneratorSwagger implements IGenerator {
     }
 	'''
 	
-	def String getBasePathParams (BasePath basePath) {
+	def StringBuilder createPathParameter(String description, String required, String value, boolean nextComma) {
 	    
-	    var nextComma = false;
 	    var valueComposer = new StringBuilder();
-	    if(basePath != null && !basePath.name.isNullOrEmpty) {
-	        var pattern = Pattern.compile("(?:.*\\{)(.*)(?:\\}.*)"); 
-            var matcher = pattern.matcher(basePath.name);
+	    
+	    if(nextComma) {
+            valueComposer.append(",").append(System.lineSeparator());
+        }
+        
+        valueComposer.append("{").append(System.lineSeparator());
+        valueComposer.append(" \"name\": \"").append(value).append("\",").append(System.lineSeparator());
+        valueComposer.append(" \"in\": \"path\",").append(System.lineSeparator());
+        valueComposer.append(" \"description\": \"").append(description).append("\",").append(System.lineSeparator());
+        valueComposer.append(" \"required\": ").append(required).append(",").append(System.lineSeparator());
+        valueComposer.append(" \"type\": \"string\"").append(System.lineSeparator());
+        valueComposer.append("}").append(System.lineSeparator());
+
+	    return valueComposer;
+	}
+	
+	def String getParams (EList<MethodRef> methodsList, String path, BasePath basePath, String method, State state) {
+        
+        var nextComma = false;
+        var valueComposer = new StringBuilder();
+        var placeHolderParamsOnPath = new HashSet();
+        var pattern = Pattern.compile("(?:.*\\{)(.*)(?:\\}.*)");
+        
+        if(path != null && path.contains("{")) {
+            
+            var matcher = pattern.matcher(path);
+            
             while (matcher.find()) {
                 
-                if(nextComma) {
-                    valueComposer.append(",");
+                var pathValue = matcher.group(1);                
+                if(!placeHolderParamsOnPath.contains(pathValue)) {
+                    
+                    placeHolderParamsOnPath.add(pathValue);
+                    valueComposer.append(createPathParameter("Path parameter","true", pathValue, nextComma));
+                    nextComma = true;
                 }
+            }
+        }
+        
+        for(MethodRef methodRef : methodsList) {
+            
+            for(CommandProperty property : methodRef.command.properties) {
                 
-                valueComposer.append("{")
-                valueComposer.append(" \"name\": \"").append(matcher.group(1)).append("\",");
-                valueComposer.append(" \"in\": \"path\",");
-                valueComposer.append(" \"description\": \"\",");
-                valueComposer.append(" \"required\": true,");
-                valueComposer.append(" \"type\": \"string\"");
-                valueComposer.append("}");
-                
+                if(property != null && !property.value.isNullOrEmpty) {
+                    
+                    var matcher = pattern.matcher(property.value);
+                    while (matcher.find()) {                    
+                        var parameter = matcher.group(1);
+                        
+                        if(!placeHolderParamsOnPath.contains(parameter)) {
+                            if(nextComma) {
+                                valueComposer.append(",").append(System.lineSeparator());
+                            }
+                            valueComposer.append("{").append(System.lineSeparator());
+                            valueComposer.append(" \"name\": \"").append(parameter).append("\",").append(System.lineSeparator());
+                            valueComposer.append(" \"in\": \"query\",").append(System.lineSeparator());
+                            valueComposer.append(" \"description\": \"\",").append(System.lineSeparator());
+                            valueComposer.append(" \"required\": true,").append(System.lineSeparator());
+                            valueComposer.append(" \"type\": \"string\"").append(System.lineSeparator());
+                            valueComposer.append("}").append(System.lineSeparator());
+                            nextComma = true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if(basePath != null && !basePath.name.isNullOrEmpty) {
+            
+            var matcher = pattern.matcher(basePath.name);
+            
+            while (matcher.find()) {
+                valueComposer.append(createPathParameter("Base path parameter","true", matcher.group(1), nextComma));
                 nextComma = true;
             }
-	    }
-
-	    return valueComposer.toString();
-	    
-	}
+        }
+        
+        if(method != null && !method.isNullOrEmpty && (method.equals("PUT") || method.equals("POST"))) {
+            
+            if(nextComma) {
+                valueComposer.append(",").append(System.lineSeparator());
+            }
+            
+            valueComposer.append("{").append(System.lineSeparator());
+            valueComposer.append(" \"name\": \"body\",").append(System.lineSeparator());
+            valueComposer.append(" \"in\": \"body\",").append(System.lineSeparator());
+            valueComposer.append(" \"description\": \"-\",").append(System.lineSeparator());
+            valueComposer.append(" \"required\": true,").append(System.lineSeparator());
+            valueComposer.append(" \"schema\": { \"$ref\": \"#/definitions/").append(state.entity.name).append("\"}").append(System.lineSeparator());
+            valueComposer.append("}").append(System.lineSeparator());
+            
+            nextComma = true;                     
+        }
+        
+        valueComposer.append(
+            createPathParameter("http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption","false", "$filter", nextComma)
+        );
+        
+        valueComposer.append(
+            createPathParameter("http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#SkipSystemQueryOption","false", "$skip", nextComma)
+        );
+        
+        valueComposer.append(
+            createPathParameter("http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#OrderbySystemQueryOption","false", "$orderby", nextComma)
+        );
+        
+        valueComposer.append(
+            createPathParameter("http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#SelectSystemQueryOption","false", "$select", nextComma)
+        );
+        
+        return valueComposer.toString();
+    }
 	
     def String getAnnotation (EList<MdfAnnotation> annotations, String name) {
         

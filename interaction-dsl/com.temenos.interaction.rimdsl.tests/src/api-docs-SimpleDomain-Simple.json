@@ -14,13 +14,43 @@
         "produces": ["application/json","application/xml"],
         "parameters": [
             {
-                "in": "body",
-                "name": "body",
-                "description": "-",
-                "required": true,
-                "schema": {
-                    "$ref": "#/definitions/ENTITY"
-                }
+             "name": "body",
+             "in": "body",
+             "description": "-",
+             "required": true,
+             "schema": { "$ref": "#/definitions/ENTITY"}
+            }
+            ,
+            {
+             "name": "$filter",
+             "in": "path",
+             "description": "http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#FilterSystemQueryOption",
+             "required": false,
+             "type": "string"
+            }
+            ,
+            {
+             "name": "$skip",
+             "in": "path",
+             "description": "http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#SkipSystemQueryOption",
+             "required": false,
+             "type": "string"
+            }
+            ,
+            {
+             "name": "$orderby",
+             "in": "path",
+             "description": "http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#OrderbySystemQueryOption",
+             "required": false,
+             "type": "string"
+            }
+            ,
+            {
+             "name": "$select",
+             "in": "path",
+             "description": "http://www.odata.org/documentation/odata-version-2-0/uri-conventions/#SelectSystemQueryOption",
+             "required": false,
+             "type": "string"
             }
         ],
          "tags": ["Simple"
