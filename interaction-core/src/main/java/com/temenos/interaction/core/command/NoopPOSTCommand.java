@@ -23,6 +23,7 @@ package com.temenos.interaction.core.command;
 
 
 import com.temenos.interaction.core.resource.EntityResource;
+import com.temenos.interaction.core.resource.RESTResource;
 
 public 	class NoopPOSTCommand implements InteractionCommand {
 
@@ -31,8 +32,16 @@ public 	class NoopPOSTCommand implements InteractionCommand {
 	@Override
 	public Result execute(InteractionContext ctx) {
 		assert(ctx != null);
+        RESTResource resource = ctx.getResource();
+        if(resource != null) {
+            ctx.setResource(resource);
+        }
+        else {
 		ctx.setResource(new EntityResource<Object>());
-		return Result.SUCCESS;
+        }
+        
+        ctx.getOutQueryParameters().putAll(ctx.getQueryParameters());
+		return Result.CREATED;
 	}
 
 };
