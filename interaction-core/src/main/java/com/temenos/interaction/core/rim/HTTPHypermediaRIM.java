@@ -807,6 +807,11 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
                     break;
                 }
             }
+            
+            if (autoResponse.getRESTResource() != null) {
+                ctx.setResource(autoResponse.getRESTResource());
+            }
+            
             InteractionContext newCtx = new InteractionContext(ctx, headers, null, null, autoResponse.getResolvedState());
             newCtx.setResource(autoResponse.getRESTResource());
             autoTransitions = getTransitions(newCtx, autoResponse.getResolvedState(), Transition.AUTO);
