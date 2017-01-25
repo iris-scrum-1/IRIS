@@ -45,6 +45,7 @@ import javax.ws.rs.core.Response.StatusType;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.wink.common.model.multipart.InMultiPart;
 import org.apache.wink.common.model.multipart.InPart;
 import org.slf4j.Logger;
@@ -588,8 +589,9 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
         ResourceState currentState = hypermediaEngine.determineState(event, getFQResourcePath());
         
         if(uriInfo.getPath() != null && currentState != null) {        	
+            
             // Extract values of placeholders defined in the resource state's path from the uri, such as id
-	        String[] uriSegments = uriInfo.getPath().split("/");        
+	        String[] uriSegments = extractDecodedUriSegments(uriInfo);
 	        String[] pathSegments = currentState.getPath().substring(1).split("/");
 	
 	        new URLHelper().extractPathParameters(uriInfo, uriSegments, pathSegments);
@@ -615,6 +617,22 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
         InteractionContext ctx = new InteractionContext(uriInfo, headers, pathParameters, queryParameters,
                 currentState, metadata);
         return ctx;
+    }
+
+    String[] extractDecodedUriSegments(UriInfo uriInfo) {
+        if(uriInfo!=null && StringUtils.isNotEmpty(uriInfo.getPath(false))) {
+            String[] uriSegments = uriInfo.getPath(false).split("/");
+            for (int segmentIndex = 0; segmentIndex < uriSegments.length; segmentIndex++) {
+                try {
+                    uriSegments[segmentIndex] = URLDecoder.decode(uriSegments[segmentIndex], "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    LOGGER.error("Error while decoding uriSegments " + e.getMessage());
+                }
+            }
+           return uriSegments;
+        }
+        LOGGER.warn("Error while extracting Uri Segment, uriInfo Cannot be null");
+        return new String[0];
     }
     
     private Response buildResponse(HttpHeaders headers, MultivaluedMap<String, String> pathParameters,
