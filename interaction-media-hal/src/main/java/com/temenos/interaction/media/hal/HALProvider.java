@@ -479,6 +479,7 @@ public class HALProvider implements MessageBodyReader<RESTResource>, MessageBody
                                  Map<String, Object> propertyMap) {
         if (links != null) {
           for (Link l : links) {
+           if(l != null) {
             logger.debug("Link: id=[" + l.getId() + "] rel=[" + l.getRel() +
                    "] method=[" + l.getMethod() + "] href=[" + l.getHref() + "]");
             String[] rels = new String[0];
@@ -491,6 +492,7 @@ public class HALProvider implements MessageBodyReader<RESTResource>, MessageBody
                 resource.withLink(rels[i], l.getHref(), l.getId(), l.getTitle(), null, null); 
               }
             }
+           }
           }
         }
 
