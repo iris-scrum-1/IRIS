@@ -51,6 +51,21 @@ public class TestURLHelper extends TestCase {
         assertNull(pathParameters.getFirst("id"));
     }
     
+    
+    @Test
+    public void testExtractPathParametersWithEmpty() {
+        UriInfo uriInfo = mock(UriInfo.class);
+        MultivaluedMap<String, String> pathParameters = new MultivaluedMapImpl<String, String>();
+        when(uriInfo.getPathParameters()).thenReturn(pathParameters);
+        
+        String[] uriSegments = new String[]{};
+        String[] pathSegments = new String[]{"{companyid}", "enqCustomerInfos()"};        
+        
+        new URLHelper().extractPathParameters(uriInfo, uriSegments, pathSegments);
+        
+        assertEquals("Size 0 check", 0, pathParameters.size());
+    }
+    
     @Test
     public void testExtractMultiplePathParameters() {        
         UriInfo uriInfo = mock(UriInfo.class);
