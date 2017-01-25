@@ -352,6 +352,54 @@ public class TestResponseHTTPHypermediaRIM {
 		 * deleting a resource, with no updated resource for the user agent
 		 * to re-display
 		 */
+	    ResourceState initialState = new ResourceState("entity", "initialstate", mockActions(), "/path");
+        ResourceState updateState = new ResourceState("entity", "updatestate", mockActions(), "/path");
+        initialState.addTransition(new Transition.Builder().method(HttpMethod.DELETE).target(updateState).build());
+        /*
+         * construct an InteractionCommand that simply mocks the result of 
+         * storing a resource, with no updated resource for the user agent
+         * to re-display
+         */
+        InteractionCommand mockCommand = new InteractionCommand() {
+            @Override
+            public Result execute(InteractionContext ctx) {
+                // this is how a command indicates No Content
+                ctx.setResource(null);
+                return Result.SUCCESS;
+            }
+        };
+        
+        // create mock command controller
+        CommandController mockCommandController = mock(CommandController.class);
+        when(mockCommandController.fetchCommand("GET")).thenReturn(mock(InteractionCommand.class));
+        when(mockCommandController.isValidCommand("DO")).thenReturn(true);
+        when(mockCommandController.fetchCommand("DO")).thenReturn(mockCommand);
+
+        // RIM with command controller that issues our mock InteractionCommand
+        HTTPHypermediaRIM rim = new HTTPHypermediaRIM(mockCommandController, new ResourceStateMachine(initialState), createMockMetadata());
+        Response response = rim.delete(mock(HttpHeaders.class), "id", mockEmptyUriInfo());
+        
+        // null resource for no content
+        RESTResource resource = (RESTResource) response.getEntity();
+        assertNull(resource);
+        // 204 http status for no content
+        assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
+	}
+
+	/*
+	 * This test is for a DELETE request that returns HttpStatus 204 "No Content"
+	 * A successful DELETE command does not return a new resource; where a target state
+	 * is a psuedo final state (effectively no target) we'll inform the user agent
+	 * that everything went OK, but there is nothing more to display i.e. No Content.
+	 */
+	@SuppressWarnings({ "unchecked" })
+	@Test
+	public void testDELETEBuildResponseWith200WithContent() throws Exception {
+		/*
+		 * construct an InteractionContext that simply mocks the result of 
+		 * deleting a resource, with no updated resource for the user agent
+		 * to re-display
+		 */
 		ResourceState initialState = new ResourceState("entity", "state", mockActions(), "/path");
 		initialState.addTransition(new Transition.Builder().method(HttpMethod.DELETE).target(initialState).build());
 		InteractionContext testContext = new InteractionContext(mock(UriInfo.class), mock(HttpHeaders.class), mock(MultivaluedMap.class), mock(MultivaluedMap.class), initialState, mock(Metadata.class));
@@ -367,41 +415,8 @@ public class TestResponseHTTPHypermediaRIM {
 		// null resource
 		RESTResource resource = (RESTResource) response.getEntity();
 		assertNull(resource);
-		// 204 http status for No Content
-		assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
-	}
-
-	/*
-	 * This test is for a DELETE request that returns HttpStatus 204 "No Content"
-	 * A successful DELETE command does not return a new resource; where a target state
-	 * is a psuedo final state (effectively no target) we'll inform the user agent
-	 * that everything went OK, but there is nothing more to display i.e. No Content.
-	 */
-	@SuppressWarnings({ "unchecked" })
-	@Test
-	public void testDELETEBuildResponseWith204NoContent() throws Exception {
-		/*
-		 * construct an InteractionContext that simply mocks the result of 
-		 * deleting a resource, with no updated resource for the user agent
-		 * to re-display
-		 */
-		ResourceState initialState = new ResourceState("entity", "state", mockActions(), "/path");
-		initialState.addTransition(new Transition.Builder().method("DELETE").target(initialState).build());
-		InteractionContext testContext = new InteractionContext(mock(UriInfo.class), mock(HttpHeaders.class), mock(MultivaluedMap.class), mock(MultivaluedMap.class), initialState, mock(Metadata.class));
-		testContext.setResource(null);
-		// mock 'new InteractionContext()' in call to delete
-		whenNew(InteractionContext.class).withParameterTypes(UriInfo.class, HttpHeaders.class, MultivaluedMap.class, MultivaluedMap.class, ResourceState.class, Metadata.class)
-			.withArguments(any(UriInfo.class), any(HttpHeaders.class), any(MultivaluedMap.class), any(MultivaluedMap.class), any(ResourceState.class), any(Metadata.class)).thenReturn(testContext);
-		
-		// RIM with command controller that issues commands that always return SUCCESS
-		HTTPHypermediaRIM rim = new HTTPHypermediaRIM(mockNoopCommandController(), new ResourceStateMachine(initialState), createMockMetadata());
-		Response response = rim.delete(mock(HttpHeaders.class), "id", mockEmptyUriInfo());
-		
-		// null resource
-		RESTResource resource = (RESTResource) response.getEntity();
-		assertNull(resource);
-		// 204 http status for No Content
-		assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
+		// 200 http status for Success with transition's content 
+		assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 	}
 
 	/*

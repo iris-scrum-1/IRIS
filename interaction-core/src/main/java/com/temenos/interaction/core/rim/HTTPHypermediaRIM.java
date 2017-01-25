@@ -560,9 +560,16 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
                             }
                         } else if (targetState.isPseudoState()
                                 || targetState.getPath().equals(ctx.getCurrentState().getPath())) {
-                            // did we delete ourselves or pseudo final state, both
-                            // are transitions to No Content
-                            status = Response.Status.NO_CONTENT;
+                            /*
+                             * did we delete ourselves or pseudo final state, both
+                             * are transitions to No Content
+                             */
+    
+                            if (currentState.getTransitions().isEmpty() && ctx.getResource() == null) {
+                                status = Status.NO_CONTENT;
+                            } else {
+                                status = Status.OK;
+                            }
                         } else {
                             throw new IllegalArgumentException("Resource interaction exception, should not be "
                                     + "possible to use a link where target state is not our current state");
