@@ -37,9 +37,7 @@ public class URLHelper {
      * Extracts any path parameters from the given uri segments and adds them to the UriInfo's path parameters
      */
     public void extractPathParameters(UriInfo uriInfo, String[] uriSegments, String[] pathSegments) { 
-        if(uriSegments!=null && uriSegments.length<=0) {
-            return;
-        }else if(uriSegments==null) {
+        if(uriSegments==null || uriSegments.length==0) {
             return;
         }
         for (int i = 0; i < pathSegments.length; i++) {

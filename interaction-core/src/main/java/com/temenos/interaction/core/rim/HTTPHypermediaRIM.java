@@ -632,7 +632,7 @@ public class HTTPHypermediaRIM implements HTTPResourceInteractionModel {
            return uriSegments;
         }
         LOGGER.warn("Error while extracting Uri Segment, uriInfo Cannot be null");
-        return new String[]{};
+        return new String[0];
     }
     
     private Response buildResponse(HttpHeaders headers, MultivaluedMap<String, String> pathParameters,
