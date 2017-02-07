@@ -123,6 +123,7 @@ public final class RequestContext {
      * RequestContext builder 
      *
      * @author sjunejo
+     * @author clopes
      *
      */
     public static class Builder {

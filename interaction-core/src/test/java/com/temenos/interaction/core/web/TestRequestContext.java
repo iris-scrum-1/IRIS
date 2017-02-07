@@ -22,6 +22,7 @@ package com.temenos.interaction.core.web;
  */
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
+import com.temenos.interaction.core.web.RequestContext.Builder;
 
 public class TestRequestContext {
 
@@ -112,5 +115,36 @@ public class TestRequestContext {
         assertEquals("value0", ctx.getFirstHeaderCaseInsensitive("HEADER0"));
         assertEquals("value0", ctx.getFirstHeaderCaseInsensitive("Header0"));
     }
-
+    
+    @Test
+    public void testRequestTime() {
+         Map<String, List<String>> headers = new HashMap<>();
+         RequestContext ctx = new RequestContext("\basepath", "\requesturi", null, headers);
+         assertNotNull(ctx.getRequestTime());
+         assertTrue(ctx.getRequestTime() >= System.currentTimeMillis());
+    }
+    
+    @Test
+    public void testBuilder() {
+        
+        Map<String, List<String>> headers = new HashMap<>();
+        RequestContext ctx = new RequestContext("\basepath", "\requesturi", null, headers);
+        
+        Builder builder = new Builder();
+        builder.setBasePath("\basepath");
+        builder.setRequestUri("\requesturi");
+        builder.setVerbosityHeader(null);
+        builder.setHeaders(headers);
+        builder.setUserPrincipal(null);
+        builder.setRequestTime(ctx.getRequestTime());
+        
+        RequestContext reqCtxBuilder = builder.build();
+        
+        assertEquals(ctx.getBasePath(), reqCtxBuilder.getBasePath());
+        assertEquals(ctx.getRequestUri(), reqCtxBuilder.getRequestUri());
+        assertEquals(ctx.getVerbosityHeader(), reqCtxBuilder.getVerbosityHeader());
+        assertEquals(ctx.getHeaders(""), reqCtxBuilder.getHeaders(""));
+        assertEquals(ctx.getUserPrincipal(), reqCtxBuilder.getUserPrincipal());
+        assertEquals(ctx.getRequestTime(), reqCtxBuilder.getRequestTime());
+    }
 }
