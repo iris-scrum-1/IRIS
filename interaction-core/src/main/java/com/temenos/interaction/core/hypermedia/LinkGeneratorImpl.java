@@ -290,7 +290,7 @@ public class LinkGeneratorImpl implements LinkGenerator {
         	}
         }
 
-        Map<String, Object> linkPropertiesMap = linkProperties.getTransitionProperties();
+        //Map<String, Object> linkPropertiesMap = linkProperties.getTransitionProperties();
         // We are NOT dealing with a dynamic target
         String targetPath = targetState.getPath();
         linkTemplate.path(targetPath);

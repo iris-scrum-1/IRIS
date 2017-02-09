@@ -23,11 +23,17 @@ package com.temenos.interaction.core.rim;
 
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.*;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -35,7 +41,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
@@ -44,7 +57,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.temenos.interaction.core.hypermedia.*;
 import org.apache.wink.common.model.multipart.InMultiPart;
 import org.apache.wink.common.model.multipart.InPart;
 import org.junit.Before;
@@ -63,6 +75,13 @@ import com.temenos.interaction.core.command.MapBasedCommandController;
 import com.temenos.interaction.core.entity.Entity;
 import com.temenos.interaction.core.entity.EntityMetadata;
 import com.temenos.interaction.core.entity.Metadata;
+import com.temenos.interaction.core.hypermedia.Action;
+import com.temenos.interaction.core.hypermedia.BeanTransformer;
+import com.temenos.interaction.core.hypermedia.ParameterAndValue;
+import com.temenos.interaction.core.hypermedia.ResourceState;
+import com.temenos.interaction.core.hypermedia.ResourceStateAndParameters;
+import com.temenos.interaction.core.hypermedia.ResourceStateMachine;
+import com.temenos.interaction.core.hypermedia.Transition;
 import com.temenos.interaction.core.resource.EntityResource;
 import com.temenos.interaction.core.web.RequestContext;
 
@@ -243,6 +262,51 @@ public class TestHTTPHypermediaRIM {
         rim.get(mock(HttpHeaders.class), "id", uriInfo);
         verify(mockCommand).execute((InteractionContext) argThat(new InteractionContextArgumentPathMatcherPercent()));
     }
+    
+    @Test
+    public void testExtractDecodedUriSegments() throws InteractionException {
+        ResourceState initialState = new ResourceState("entity", "state", mockActions(), "/test");
+        InteractionCommand mockCommand = mock(InteractionCommand.class);
+        when(mockCommand.execute(any(InteractionContext.class))).thenReturn(Result.FAILURE);
+        HTTPHypermediaRIM rim = new HTTPHypermediaRIM(mockCommandController(mockCommand), new ResourceStateMachine(
+                initialState), createMockMetadata());
+
+        UriInfo uriInfo = mock(UriInfo.class);
+        when(uriInfo.getPath(anyBoolean())).thenReturn("notes/id('id%2FwithSlash')/view");
+        String[] expectedResultArray = new String[]{"notes", "id('id/withSlash')", "view"};
+        
+        String[] resultArray =  rim.extractDecodedUriSegments(uriInfo);
+        assertEquals(3, resultArray.length);
+        assertArrayEquals(expectedResultArray, resultArray);
+    }
+    
+    /*
+     * testing method extractDecodedUriSegment with null and empty input
+     * 
+     * 
+     */
+    @Test
+    public void testExtractDecodedUriSegmentsWithNullAndEmptyInput() throws InteractionException {
+        ResourceState initialState = new ResourceState("entity", "state", mockActions(), "/test");
+        InteractionCommand mockCommand = mock(InteractionCommand.class);
+        when(mockCommand.execute(any(InteractionContext.class))).thenReturn(Result.FAILURE);
+        HTTPHypermediaRIM rim = new HTTPHypermediaRIM(mockCommandController(mockCommand), new ResourceStateMachine(
+                initialState), createMockMetadata());
+        String[] resultArray =  rim.extractDecodedUriSegments(null);
+        if(resultArray.length != 0) {
+            fail("When passing null input method extractDecodedUriSegments return some invalid result");
+        }
+        //Empty input String test 
+        UriInfo uriInfo = mock(UriInfo.class);
+        when(uriInfo.getPath(anyBoolean())).thenReturn("");
+        
+        String[] resultArrayforEmptyPath =  rim.extractDecodedUriSegments(uriInfo);
+        if(resultArrayforEmptyPath.length != 0) {
+            fail("When passing empty input method extractDecodedUriSegments return some invalid result");
+        }
+    }
+    
+    
 
     class InteractionContextArgumentPathMatcherPercent extends ArgumentMatcher<InteractionContext> {
         public boolean matches(Object o) {
