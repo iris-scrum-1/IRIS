@@ -180,6 +180,23 @@ public class TestLinkToFieldAssociation {
             }
         }
     }
+    
+    @Test
+    public void testMixofRootandCollectionDynamicResourceMultipleParams() {
+        Map<String, Object> transitionPropertiesMap = createTransitionPropertiesMap(new String[] { "AB(0).XX", "value1", "AB(1).XX", "value2", "AB(0).MN", "value1", "AB(1).MN", "value2", "EF", "efValue"});
+        LinkToFieldAssociation linkToFieldAssociation = new LinkToFieldAssociationImpl(createTransition("AB.XX", true, new String[] {"{EF}", "{nextId}", "{AB.MN}"}), transitionPropertiesMap);
+        List<LinkProperties> transitionPropsList = linkToFieldAssociation.getProperties();
+        assertEquals(2, transitionPropsList.size());
+        for (LinkProperties linkTransitionProps : transitionPropsList) {
+            String fullyQualifiedTargetField = linkTransitionProps.getTargetFieldFullyQualifiedName();
+            assertTrue(StringUtils.equals("AB(0).XX", fullyQualifiedTargetField) || StringUtils.equals("AB(1).XX", fullyQualifiedTargetField));
+
+            Map<String, Object> transitionMap = linkTransitionProps.getTransitionProperties();
+            assertTrue(transitionMap.containsKey("EF") && transitionMap.containsKey("AB.MN"));
+            assertTrue(StringUtils.equals("efValue", (String) transitionMap.get("EF")));
+            assertTrue(StringUtils.equals("value1", (String) transitionMap.get("AB.MN")) || StringUtils.equals("value2", (String) transitionMap.get("AB.MN")));
+        }
+    }
 
     private Transition createTransition(String targetField, boolean dynamicResource, String[] resourceArgs, String... uriMapProperties) {
         ResourceState resourceState = null;

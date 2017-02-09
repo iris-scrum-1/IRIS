@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,7 @@ public class LinkToFieldAssociationImpl implements LinkToFieldAssociation {
     private Transition transition;
     private String targetFieldName;
     private List<String> transitionCollectionParams;
-    private Boolean isCollectionDynamicResourceName;
+    private Boolean hasCollectionDynamicResourceName;
     private Map<String, Object> transitionProperties;
     private Map<String, Object> normalisedTransitionProperties;
 
@@ -54,7 +55,7 @@ public class LinkToFieldAssociationImpl implements LinkToFieldAssociation {
         this.transition = transition;
         targetFieldName = transition.getSourceField();
         transitionCollectionParams = getCollectionParams(transition.getCommand().getUriParameters());
-        isCollectionDynamicResourceName = isCollectionDynamicResourceName(transition.getTarget());
+        hasCollectionDynamicResourceName = hasCollectionDynamicResourceName();
         transitionProperties = properties;
         normalisedTransitionProperties = HypermediaTemplateHelper.normalizeProperties(properties);
     }
@@ -62,18 +63,17 @@ public class LinkToFieldAssociationImpl implements LinkToFieldAssociation {
     @Override
     public boolean isTransitionSupported() {
 
-        if (targetFieldName == null && (!transitionCollectionParams.isEmpty() || isCollectionDynamicResourceName)) {
+        if (targetFieldName == null && (!transitionCollectionParams.isEmpty() || hasCollectionDynamicResourceName)) {
             logger.error("Cannot generate links for transition " + transition + ". Target field name cannot be null if we have collection parameters or a collection dymamic resource.");
             return false;
         }
 
-        if (isCollectionDynamicResourceName && !StringUtils.equals(getParentNameOfCollectionValue(targetFieldName), getParentNameOfDynamicResource())) {
+        if (hasCollectionDynamicResourceName && !StringUtils.equals(getParentNameOfCollectionValue(targetFieldName), getFirstParentNameOfDynamicResource())){
             logger.error("Cannot generate links for transition " + transition + ". Parent of target field name and dynamic resource must be same.");
             return false;
         }
         
-        if(isCollectionDynamicResourceName && !allParametersHaveSameParent(((DynamicResourceState) transition.getTarget()).getResourceLocatorArgs()))
-        {
+        if(hasCollectionDynamicResourceName && !allParametersHaveSameParent(((DynamicResourceState) transition.getTarget()).getResourceLocatorArgs())){
             logger.error("Cannot generate links for transition " + transition + ". All multivalue fields in the parameter list of the dynamic resource must have the same parent.");
             return false;
         }
@@ -198,14 +198,15 @@ public class LinkToFieldAssociationImpl implements LinkToFieldAssociation {
 
     private List<String> getDynamicResourceResolvedFieldName(ResourceState targetResourceState, String targetField) {
         List<String> resolvedFieldNames = new ArrayList<String>();
-        if (isCollectionDynamicResourceName) {
+        if (hasCollectionDynamicResourceName) {
             String targetFieldParentName = getParentNameOfCollectionValue(targetField);
-            DynamicResourceState dynamicResourceState = (DynamicResourceState) targetResourceState;
-            for(String fieldName : dynamicResourceState.getResourceLocatorArgs())
-            {
-                if(fieldName.contains("."))
-                {
-                    resolvedFieldNames.add(targetFieldParentName + "." + getChildNameOfCollectionValue(fieldName).replaceAll("\\}", "")); //Remove enclosed curly brace
+            if (targetResourceState instanceof DynamicResourceState) {
+                String[] args = ArrayUtils.nullToEmpty(((DynamicResourceState) targetResourceState).getResourceLocatorArgs());
+                for(int index = 0; args.length > index ; index++ ){
+                    String argValue = args[index];
+                    if(StringUtils.contains(argValue, ".")){
+                        resolvedFieldNames.add(targetFieldParentName + "." + getChildNameOfCollectionValue(argValue).replaceAll("\\}", ""));
+                    }
                 }
             }
         }
@@ -251,23 +252,22 @@ public class LinkToFieldAssociationImpl implements LinkToFieldAssociation {
         return collectionParams;
     }
 
-    private boolean isCollectionDynamicResourceName(ResourceState target) {
-        if (target instanceof DynamicResourceState) {
-            String[] resourceLocatorArgs = ((DynamicResourceState) target).getResourceLocatorArgs();
-            if (resourceLocatorArgs != null && resourceLocatorArgs.length > 0 && resourceLocatorArgs[0].contains(".")) {
-                return true;
-            }
-        }
-        return false;
+    private boolean hasCollectionDynamicResourceName() {
+        return getFirstParentNameOfDynamicResource() != null ? true : false;
     }
 
-    private String getParentNameOfDynamicResource() {
-        String[] resourceLocatorArgs = ((DynamicResourceState) transition.getTarget()).getResourceLocatorArgs();
-        String parent = getParentNameOfCollectionValue(resourceLocatorArgs[0]);
-        if (parent != null && parent.length()>1) {
-            parent = parent.substring(1); //Remove starting curly brace {
+    private String getFirstParentNameOfDynamicResource() {
+        String firstParent = null;
+        if (transition.getTarget() instanceof DynamicResourceState) {
+            String[] args = ArrayUtils.nullToEmpty(((DynamicResourceState) transition.getTarget()).getResourceLocatorArgs());
+            for (String argValue : args) {
+                if(StringUtils.contains(argValue, ".")){
+                    firstParent = StringUtils.replace(getParentNameOfCollectionValue(argValue), "{", "");//Remove starting curly brace {
+                    break;
+                }
+            }
         }
-        return parent;
+        return firstParent;
     }
 
     private List<String> extractMatchingFieldsFromTransitionProperties(String fieldName) {

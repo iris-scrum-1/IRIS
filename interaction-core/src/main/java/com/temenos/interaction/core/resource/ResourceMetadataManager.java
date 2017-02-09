@@ -185,7 +185,7 @@ public class ResourceMetadataManager {
 		String metadataFilename;
 		
 		if(entityName == null ) {
-			LOGGER.error("null entity name received, using: " + METADATA_XML_FILE);
+			LOGGER.warn("null entity name received, using: " + METADATA_XML_FILE);
 			metadataFilename = METADATA_XML_FILE;
 		} else {
 			metadataFilename = "metadata-" + entityName + ".xml";
@@ -200,7 +200,7 @@ public class ResourceMetadataManager {
 		try(InputStream is = configLoader.load(metadataFilename)) {			
 			return new MetadataParser(termFactory).parse(is);
 		} catch(Exception e) {
-			LOGGER.error("Failed to parse " + metadataFilename + ": ", e);
+			LOGGER.debug("Failed to parse " + metadataFilename + ": ", e);
 			throw new RuntimeException("Failed to parse " + metadataFilename + ": ", e);
 		}
 	}
