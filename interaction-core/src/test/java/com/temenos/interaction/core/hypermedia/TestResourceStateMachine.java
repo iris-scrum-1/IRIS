@@ -2674,6 +2674,38 @@ public class TestResourceStateMachine {
         assertEquals("I", result.getParams()[1].getValue());
         assertEquals("Account", result.getParams()[2].getValue());
     }
+    
+    @Test
+    public void testResolvedDynamicResourceCollectionwithMultipleParam() {
+        ResourceStateMachine rsm = createResourceStateMachineForResolveDynamicResource();
+        String[] resourceArgs = new String[] { "{Field}", "I", "{Parent.Product}" };        
+        DynamicResourceState resourceState = new DynamicResourceState("", "", "", resourceArgs);
+
+        Map<String, Object> transitionProperties = new HashMap<String, Object>();
+        transitionProperties.put("Field", "AVersion");
+        transitionProperties.put("Parent.Product", "Account");
+
+        ResourceStateAndParameters result = rsm.resolveDynamicState(resourceState, transitionProperties, null);
+        assertEquals("AVersion", result.getParams()[0].getValue());
+        assertEquals("I", result.getParams()[1].getValue());
+        assertEquals("Account", result.getParams()[2].getValue());
+    }
+    
+    @Test
+    public void testResolvedDynamicResourceCollectionwithMultipleParamFailure() {
+        ResourceStateMachine rsm = createResourceStateMachineForResolveDynamicResource();
+        String[] resourceArgs = new String[] { "{Parent1.Field}", "I", "{Parent2.Product}" };        
+        DynamicResourceState resourceState = new DynamicResourceState("", "", "", resourceArgs);
+
+        Map<String, Object> transitionProperties = new HashMap<String, Object>();
+        transitionProperties.put("Parent1.Field", "AVersion");
+        transitionProperties.put("Parent.Product", "Account");
+
+        ResourceStateAndParameters result = rsm.resolveDynamicState(resourceState, transitionProperties, null);
+        assertEquals("AVersion", result.getParams()[0].getValue());
+        assertEquals("I", result.getParams()[1].getValue());
+        assertEquals("Parent2.Product", result.getParams()[2].getValue());
+    }
 
     private ResourceStateMachine createResourceStateMachineForResolveDynamicResource() {
         ResourceParameterResolver parameterResolver = new ResourceParameterResolver() {
