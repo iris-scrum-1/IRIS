@@ -45,6 +45,8 @@ public class SwaggerTest {
 	
 	private static final String SWAGGER_SERVLET_INIT_PARAM_VALUE = "api";
 	
+	private static final String SWAGGER_SERVLET_APIKEY_PARAM_VALUE = "api_key_new";
+	
 	private static final String REQUEST_METHOD = "GET";
 	
 	private static final String REQUEST_URI = "swagger";
@@ -57,7 +59,7 @@ public class SwaggerTest {
 	
 	private static final int EXPECTED_SWAGGER_SERVLET_RESPONSE_STATUS = 200;
 	
-	private static final String EXPECTED_SWAGGER_SERVLET_SIMPLE_STATES_SWAGGER = "{\"apiVersion\":\"0.2\",\"swaggerVersion\":\"1.2\",\"resourcePath\":\"/A\",\"apis\":[{\"path\":\"/A\",\"operations\":[{\"method\":\"GET\",\"nickname\":\"A\"}]},{\"path\":\"/B\",\"operations\":[{\"method\":\"POST\",\"nickname\":\"B\"},{\"method\":\"GET\",\"nickname\":\"B\"}]}],\"basePath\":\""+ REQUEST_CONTEXT_PATH + "/" + SWAGGER_SERVLET_INIT_PARAM_VALUE + "\",\"host\":\""+REQUEST_SERVER_NAME + ":" + REQUEST_SERVER_PORT +"\"}";
+	private static final String EXPECTED_SWAGGER_SERVLET_SIMPLE_STATES_SWAGGER = "{\"apiVersion\":\"0.2\",\"swaggerVersion\":\"1.2\",\"resourcePath\":\"/A\",\"apis\":[{\"path\":\"/A\",\"operations\":[{\"method\":\"GET\",\"nickname\":\"A\"}]},{\"path\":\"/B\",\"operations\":[{\"method\":\"POST\",\"nickname\":\"B\"},{\"method\":\"GET\",\"nickname\":\"B\"}]}],\"basePath\":\""+ REQUEST_CONTEXT_PATH + "/" + SWAGGER_SERVLET_INIT_PARAM_VALUE + "\",\"host\":\""+REQUEST_SERVER_NAME + ":" + REQUEST_SERVER_PORT +"\",\"securityDefinitions\":{\"api_key\":{\"type\":\"apiKey\",\"name\":\"api_key_new\",\"in\":\"header\"}}}";
 
 	private static final DefaultResourceLoader defaultResourceLoader = new DefaultResourceLoader();
 	
@@ -73,6 +75,7 @@ public class SwaggerTest {
 		servletContext = new MockServletContext(defaultResourceLoader);
 		servletConfig = new MockServletConfig(servletContext, SWAGGER_SERVLET_NAME);
 		servletConfig.addInitParameter(SwaggerServlet.SWAGGER_SERVLET_INIT_PARAM, SWAGGER_SERVLET_INIT_PARAM_VALUE);
+		servletConfig.addInitParameter(SwaggerServlet.SWAGGER_SERVLET_APIKEY_PARAM, SWAGGER_SERVLET_APIKEY_PARAM_VALUE);
 		swaggerServlet = new SwaggerServlet();
 		swaggerServlet.init(servletConfig);
 	}
