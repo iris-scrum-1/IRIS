@@ -383,7 +383,7 @@ class RIMDslGeneratorSwagger implements IGenerator {
         var nextComma = false;
         var valueComposer = new StringBuilder();
         var placeHolderParamsOnPath = new HashSet();
-        var pattern = Pattern.compile("(?:.*\\{)(.*)(?:\\}.*)");
+        var pattern = Pattern.compile("(?:\\{)([0-9a-zA-Z.]+)(?:\\})");
         
         if(path != null && path.contains("{")) {
             
